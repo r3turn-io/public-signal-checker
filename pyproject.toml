@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "r3turn-public-signal-checker"
+version = "0.1.0"
+description = "A lightweight utility for inspecting selected public machine-readable entity signals."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[project.scripts]
+r3turn-signal = "public_signal_checker.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/public_signal_checker"]
