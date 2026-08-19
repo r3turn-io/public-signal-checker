@@ -7,9 +7,11 @@ name = "r3turn-public-signal-checker"
 version = "0.1.0"
 description = "A lightweight utility for inspecting selected public machine-readable entity signals."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
-    "httpx",
+    "httpx>=0.28.1,<1",
 ]
 
 [project.optional-dependencies]

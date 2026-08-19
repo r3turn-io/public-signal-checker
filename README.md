@@ -169,9 +169,9 @@ This repository will not contain:
 
 ## Status
 
-**v0.1 — private development / pre-release**
+**v0.1 — release candidate**
 
-The repository will remain private until its scope, security behavior, tests and public IP boundary have been reviewed.
+Scope, security behavior, tests and the public/private boundary have been reviewed for a v0.1 public release. Repository visibility has not yet been changed.
 
 ## R3TURN
 
