@@ -169,9 +169,9 @@ This repository will not contain:
 
 ## Status
 
-**v0.1 — release candidate**
+**v0.1.0 — initial release**
 
-Scope, security behavior, tests and the public/private boundary have been reviewed for a v0.1 public release. Repository visibility has not yet been changed.
+The initial release has completed implementation, security review, boundary review and release validation.
 
 ## R3TURN
 
