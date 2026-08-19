@@ -104,6 +104,33 @@ Please report suspected security issues privately to:
 
 Do not publish exploit details in a public GitHub issue before R3TURN has had a reasonable opportunity to investigate.
 
+## v0.1 implementation notes
+
+The current CLI applies the controls above as follows:
+
+* schemes are restricted to `http` and `https`
+* URLs with embedded credentials are rejected
+* localhost, loopback, private, link-local, multicast, unspecified, reserved and other non-global IP addresses are rejected
+* obviously internal hostnames (for example `localhost`, `*.local`, `*.internal`, `*.corp`) are rejected
+* DNS resolution is performed before each request, including redirect hops, and every returned address is inspected
+* redirects are followed manually with a depth limit; each destination is authorized before the next request
+* connect, read, write and pool timeouts are set
+* response bodies are capped
+* `trust_env=False` is set so environment proxy settings are not used
+* remote JavaScript is not executed and retrieved content is not evaluated
+* CLI error messages do not include resolved IP addresses
+
+## Known limitations
+
+These controls reduce accidental requests to non-public destinations. They are not a complete SSRF guarantee:
+
+* There is a time-of-check vs time-of-use window between DNS inspection and the subsequent TCP/TLS connection. This CLI does not pin the connection to the inspected addresses.
+* The process uses the operator machine's resolver, routing and TLS stack.
+* Hostname classification cannot enumerate every private naming convention.
+* The tool is a local CLI, not a multi-tenant fetch service. Operators can still point it at destinations their own machine can reach if those destinations appear globally routable.
+
+Do not describe this utility as providing complete SSRF prevention.
+
 ## No security guarantee
 
 Public Signal Checker provides limited public-surface inspection.
