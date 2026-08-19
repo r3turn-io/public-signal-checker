@@ -68,14 +68,82 @@ Your company has weak entity visibility.
 
 requires broader evidence and interpretation and is therefore outside the scope of this utility.
 
+## Usage
+
+Install locally (development):
+
+```text
+python -m pip install -e ".[dev]"
+```
+
+Inspect a public HTTP or HTTPS URL:
+
+```text
+r3turn-signal https://example.com
+r3turn-signal https://example.com --json
+```
+
+Human-readable output lists each observation as detected or not detected.
+
+`--json` writes a machine-readable object with the same fields.
+
+Invalid, unsupported or blocked URLs exit with a non-zero status and a concise error on stderr.
+
 ## Output
 
-The initial version is intended to provide:
+v0.1 provides:
 
 * human-readable inspection results
 * structured JSON output
 
 The same observed signal should produce the same interpretation-free result under equivalent inspection conditions.
+
+Missing signals are represented as absent or not detected. Absence is not turned into a score, grade, diagnosis or recommendation.
+
+JSON fields:
+
+```text
+input_url
+final_url
+http_status
+title
+meta_description
+canonical
+robots_txt.reachable
+robots_txt.url
+sitemaps
+organization_jsonld
+same_as
+hreflang
+```
+
+`hreflang` entries are objects with `hreflang` and `href`.
+
+Sitemaps are collected from `Sitemap:` lines in `robots.txt` and from a conventional `/sitemap.xml` path on the same origin. Sitemap URLs declared in `robots.txt` are recorded as observed text without being requested. The checker may request the conventional `/sitemap.xml` URL to observe whether it returns an HTTP 2xx response; v0.1 does not parse sitemap XML contents in either case.
+
+## Testing
+
+Tests use mocks and fixtures. They do not require live internet access and must not target live customer websites.
+
+```text
+pytest -q
+```
+
+## Network safety
+
+The checker treats submitted URLs and remote responses as untrusted.
+
+v0.1 permits only `http` and `https`, rejects URL-embedded credentials, and blocks requests to localhost, loopback, private, link-local, multicast, unspecified and other non-global addresses. Hostnames are resolved and every returned IP address is inspected before a request. Redirect destinations are authorized before they are followed. Automatic unrestricted redirect following is not used.
+
+The client uses explicit connect/read/write/pool timeouts, a redirect-depth limit, a response-size limit, and `trust_env=False`. Remote JavaScript is not executed. Retrieved content is not evaluated as code.
+
+## Known limitations
+
+* Inspection reads static response bodies only. Signals injected by client-side JavaScript are not observed.
+* Oversized responses are rejected rather than partially interpreted.
+* DNS answers are checked before the HTTP client connects. A resolver answer can change between that check and the TCP/TLS handshake (DNS rebinding / time-of-check vs time-of-use). This local CLI does not pin connections to pre-resolved IP addresses.
+* The tool uses the operator machine's DNS and network path.
+* Findings are observations at inspection time, not a security audit of the target website.
 
 ## Public / private boundary
 
@@ -101,9 +169,9 @@ This repository will not contain:
 
 ## Status
 
-**v0.1 — private development / pre-release**
+**v0.1 — release candidate**
 
-The repository will remain private until its scope, security behavior, tests and public IP boundary have been reviewed.
+Scope, security behavior, tests and the public/private boundary have been reviewed for a v0.1 public release. Repository visibility has not yet been changed.
 
 ## R3TURN
 
