@@ -137,7 +137,10 @@ def _send(
 
 
 def _request_url(url: str) -> str:
-    parsed = urlparse(url.strip())
+    try:
+        parsed = urlparse(url.strip())
+    except ValueError as exc:
+        raise FetchError("The request failed.") from exc
     path = parsed.path if parsed.path else "/"
     return urlunparse(
         (parsed.scheme, parsed.netloc, path, parsed.params, parsed.query, "")
@@ -145,8 +148,11 @@ def _request_url(url: str) -> str:
 
 
 def _absolute_location(current_url: str, location: str) -> str:
-    joined = urljoin(current_url, location.strip())
-    parsed = urlparse(joined)
+    try:
+        joined = urljoin(current_url, location.strip())
+        parsed = urlparse(joined)
+    except ValueError as exc:
+        raise FetchError("The request failed.") from exc
     if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
         raise FetchError("The request failed.")
     return _request_url(joined)

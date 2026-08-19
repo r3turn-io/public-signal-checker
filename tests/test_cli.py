@@ -36,6 +36,17 @@ def test_cli_nonzero_for_127_0_0_1(capsys):
     assert "10.0.0." not in captured.err
 
 
+def test_cli_nonzero_for_malformed_bracket_url(capsys):
+    code = main(["http://[invalid"])
+    captured = capsys.readouterr()
+    assert code == 1
+    assert captured.out == ""
+    assert captured.err.strip() != ""
+    assert "Traceback" not in captured.err
+    assert "public_signal_checker" not in captured.err.lower()
+    assert ".py" not in captured.err
+
+
 def test_cli_nonzero_for_unsupported_scheme(capsys):
     code = main(["ftp://example.com/"])
     captured = capsys.readouterr()

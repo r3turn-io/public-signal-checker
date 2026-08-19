@@ -152,3 +152,18 @@ def test_unresolved_hostname_fails_closed(monkeypatch):
 def test_empty_url_rejected():
     with pytest.raises(UnsafeURLError, match="invalid"):
         authorize_url("   ")
+
+
+def test_malformed_bracket_ipv6_url_fails_safely():
+    with pytest.raises(UnsafeURLError, match="invalid"):
+        authorize_url("http://[invalid")
+
+
+def test_malformed_unterminated_bracket_url_fails_safely():
+    with pytest.raises(UnsafeURLError, match="invalid"):
+        authorize_url("http://[::1")
+
+
+def test_embedded_null_byte_url_fails_safely():
+    with pytest.raises(UnsafeURLError, match="invalid"):
+        authorize_url("http://\x00example.com/")

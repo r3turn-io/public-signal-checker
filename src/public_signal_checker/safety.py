@@ -60,7 +60,13 @@ def authorize_url(url: str) -> str:
         raise UnsafeURLError("The URL is invalid.")
 
     candidate = url.strip()
-    parsed = urlparse(candidate)
+    if "\x00" in candidate:
+        raise UnsafeURLError("The URL is invalid.")
+
+    try:
+        parsed = urlparse(candidate)
+    except ValueError as exc:
+        raise UnsafeURLError("The URL is invalid.") from exc
 
     if parsed.scheme.lower() not in ALLOWED_SCHEMES:
         raise UnsafeURLError("Unsupported URL scheme. Only http and https are allowed.")
@@ -106,13 +112,13 @@ def _literal_ip(
     try:
         packed = socket.inet_aton(hostname)
         return ipaddress.IPv4Address(packed)
-    except OSError:
+    except (OSError, ValueError):
         pass
 
     try:
         packed = socket.inet_pton(socket.AF_INET6, hostname)
         return ipaddress.IPv6Address(packed)
-    except OSError:
+    except (OSError, ValueError):
         return None
 
 

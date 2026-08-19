@@ -119,7 +119,7 @@ hreflang
 
 `hreflang` entries are objects with `hreflang` and `href`.
 
-Sitemaps are collected from `Sitemap:` lines in `robots.txt` and from a conventional `/sitemap.xml` path on the same origin when that path returns an HTTP 2xx response. Declared sitemap URLs are recorded as observed text; v0.1 does not download or parse sitemap contents.
+Sitemaps are collected from `Sitemap:` lines in `robots.txt` and from a conventional `/sitemap.xml` path on the same origin. Sitemap URLs declared in `robots.txt` are recorded as observed text without being requested. The checker may request the conventional `/sitemap.xml` URL to observe whether it returns an HTTP 2xx response; v0.1 does not parse sitemap XML contents in either case.
 
 ## Testing
 

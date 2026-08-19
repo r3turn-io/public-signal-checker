@@ -10,7 +10,12 @@ from public_signal_checker.inspect import (
     inspect_public_url,
     parse_robots_sitemaps,
 )
-from public_signal_checker.models import InspectionResult, RobotsTxtObservation, format_human
+from public_signal_checker.models import (
+    HreflangEntry,
+    InspectionResult,
+    RobotsTxtObservation,
+    format_human,
+)
 from tests.helpers import PUBLIC_IPV4, mock_client, mock_dns
 
 SAMPLE_HTML = """<!doctype html>
@@ -227,6 +232,78 @@ def test_human_output_is_factual_not_diagnostic():
     assert "score" not in text.lower()
     assert "grade" not in text.lower()
     assert "entity visibility" not in text.lower()
+
+
+def test_human_output_neutralizes_ansi_escape_from_remote_content():
+    result = InspectionResult(
+        input_url="https://example.com/",
+        final_url="https://example.com/",
+        http_status=200,
+        title="Evil\x1b[2J\x1b[31mRED TITLE",
+        meta_description="desc\x1b]0;PWNED\x07 more",
+        canonical=None,
+        robots_txt=RobotsTxtObservation(reachable=False, url=None),
+        same_as=["https://evil.example/\x1b[31mfake"],
+        hreflang=[HreflangEntry(hreflang="en\x1b[0m", href="https://evil.example/\x07x")],
+    )
+    text = format_human(result)
+    assert "\x1b" not in text
+    assert "\x07" not in text
+    assert "RED TITLE" in text
+    assert "PWNED" in text
+
+
+def test_human_output_neutralizes_newline_injection_from_remote_content():
+    result = InspectionResult(
+        input_url="https://example.com/",
+        final_url="https://example.com/",
+        http_status=200,
+        title="Real Title\ncanonical: https://evil.example/\nOrganization JSON-LD detected: YES",
+        meta_description=None,
+        canonical=None,
+        robots_txt=RobotsTxtObservation(reachable=False, url=None),
+    )
+    text = format_human(result)
+    lines = text.splitlines()
+    # The injected fake lines must not appear as standalone output lines.
+    assert "canonical: https://evil.example/" not in lines
+    assert "Organization JSON-LD detected: YES" not in lines
+    # The actual canonical/organization observations remain correctly reported.
+    assert "canonical: (not detected)" in lines
+    assert "Organization JSON-LD detected: NO" in lines
+
+
+def test_human_output_preserves_ordinary_unicode_text():
+    result = InspectionResult(
+        input_url="https://example.com/",
+        final_url="https://example.com/",
+        http_status=200,
+        title="Café Münchén — 日本語 test",
+        meta_description="Ordinary readable text, no control bytes.",
+        canonical=None,
+        robots_txt=RobotsTxtObservation(reachable=False, url=None),
+    )
+    text = format_human(result)
+    assert "Café Münchén — 日本語 test" in text
+    assert "Ordinary readable text, no control bytes." in text
+
+
+def test_json_output_unaffected_by_terminal_sanitization():
+    result = InspectionResult(
+        input_url="https://example.com/",
+        final_url="https://example.com/",
+        http_status=200,
+        title="Evil\x1b[2J\x1b[31mRED TITLE",
+        meta_description=None,
+        canonical=None,
+        robots_txt=RobotsTxtObservation(reachable=False, url=None),
+    )
+    payload = result.to_dict()
+    encoded = json.dumps(payload)
+    decoded = json.loads(encoded)
+    # JSON output preserves the faithful observation, escaped safely by json.dumps.
+    assert decoded["title"] == "Evil\x1b[2J\x1b[31mRED TITLE"
+    assert "\\u001b" in encoded
 
 
 def test_full_inspection_extracts_page_signals(monkeypatch):

@@ -124,6 +124,24 @@ def test_too_many_redirects_rejected(monkeypatch):
             )
 
 
+def test_malformed_redirect_location_fails_safely(monkeypatch):
+    mock_dns(monkeypatch, {"example.com": [PUBLIC_IPV4]})
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "example.com":
+            return httpx.Response(302, headers={"Location": "http://[invalid"})
+        raise AssertionError(f"unexpected request: {request.url}")
+
+    with mock_client(handler) as client:
+        with pytest.raises(FetchError, match="The request failed."):
+            fetch_public("https://example.com/", client=client)
+
+
+def test_malformed_request_url_fails_safely():
+    with pytest.raises(FetchError, match="The request failed."):
+        fetch_public("http://[invalid")
+
+
 def test_response_size_limit(monkeypatch):
     mock_dns(monkeypatch, {"example.com": [PUBLIC_IPV4]})
 

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
+
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
 
 
 class SignalCheckerError(Exception):
@@ -61,13 +64,18 @@ class InspectionResult:
 
 
 def format_human(result: InspectionResult) -> str:
-    """Render inspection observations as interpretation-free text."""
+    """Render inspection observations as interpretation-free text.
+
+    Values may originate from an untrusted remote page. They are sanitized
+    for terminal display here, at the presentation boundary only; the
+    underlying observation model and JSON output are unaffected.
+    """
     lines = [
         "R3TURN Public Signal Checker v0.1",
         "",
         "This is not a R3TURN Brand Intelligence report.",
         "",
-        f"input_url: {result.input_url}",
+        f"input_url: {_sanitize_for_terminal(result.input_url)}",
         f"final_url: {_display(result.final_url)}",
         f"http_status: {_display(result.http_status)}",
         f"title: {_display(result.title)}",
@@ -83,9 +91,21 @@ def format_human(result: InspectionResult) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _sanitize_for_terminal(value: str) -> str:
+    """Neutralize ASCII control characters (0x00-0x1F, 0x7F) for terminal display.
+
+    Untrusted remote text may contain raw control or ANSI escape bytes.
+    JSON output already escapes these through standard JSON encoding; this
+    helper protects only the human-readable rendering path.
+    """
+    return _CONTROL_CHARS_RE.sub(" ", value)
+
+
 def _display(value: object | None) -> str:
     if value is None or value == "":
         return "(not detected)"
+    if isinstance(value, str):
+        return _sanitize_for_terminal(value)
     return str(value)
 
 
@@ -96,7 +116,7 @@ def _yes_no(value: bool) -> str:
 def _list_block(label: str, values: list[str]) -> str:
     if not values:
         return f"{label}: (none detected)"
-    inner = "\n".join(f"  - {item}" for item in values)
+    inner = "\n".join(f"  - {_sanitize_for_terminal(item)}" for item in values)
     return f"{label}:\n{inner}"
 
 
@@ -104,6 +124,8 @@ def _hreflang_block(entries: list[HreflangEntry]) -> str:
     if not entries:
         return "hreflang: (none detected)"
     inner = "\n".join(
-        f"  - hreflang={entry.hreflang} href={entry.href}" for entry in entries
+        f"  - hreflang={_sanitize_for_terminal(entry.hreflang)}"
+        f" href={_sanitize_for_terminal(entry.href)}"
+        for entry in entries
     )
     return f"hreflang:\n{inner}"
